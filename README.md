@@ -1,0 +1,78 @@
+# Split-Array
+
+A PowerShell function that splits an array into evenly distributed sub-arrays (chunks).
+
+## Installation
+
+Dot-source the script in your session or profile:
+
+```powershell
+. ./Split-Array.ps1
+```
+
+## Usage
+
+### Split by chunk size (`-ChunkSize`)
+
+Specifies the maximum number of elements per chunk.
+
+```powershell
+Split-Array -InputObject 1..10 -ChunkSize 3
+# Returns: (1,2,3), (4,5,6), (7,8,9), (10)
+
+1..10 | Split-Array -ChunkSize 4
+# Returns: (1,2,3,4), (5,6,7,8), (9,10)
+```
+
+### Split into N chunks (`-MaxChunk`)
+
+Specifies the desired number of chunks. Elements are distributed as evenly as possible.
+
+```powershell
+Split-Array -InputObject 1..10 -MaxChunk 3
+# Returns: (1,2,3,4), (5,6,7), (8,9,10)
+```
+
+### Iterating over chunks
+
+```powershell
+$chunks = Split-Array -InputObject 1..7 -MaxChunk 3
+foreach ($chunk in $chunks) {
+    $chunk -join ', '
+}
+# Output:
+# 1, 2, 3
+# 4, 5
+# 6, 7
+```
+
+## Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `InputObject` | `Object` | Array or elements to split. Accepts pipeline input. |
+| `ChunkSize` | `Int` | Maximum number of elements per chunk. |
+| `MaxChunk` | `Int` | Desired number of output chunks. |
+
+`-ChunkSize` and `-MaxChunk` are mutually exclusive.
+
+## Edge Cases
+
+| Scenario | Behavior |
+|---|---|
+| `ChunkSize >= Count` | Returns one chunk containing all elements |
+| `MaxChunk = 1` | Returns one chunk containing all elements |
+| `Count <= MaxChunk` | Returns one chunk per element |
+| Empty input | Returns one empty chunk |
+
+## Tests
+
+Tests are written with [Pester](https://pester.dev) v5.
+
+```powershell
+Invoke-Pester ./Split-Array.Tests.ps1
+```
+
+## License
+
+[MIT](LICENSE)

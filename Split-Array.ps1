@@ -61,15 +61,38 @@ function Split-Array {
     Processes each chunk individually. Output: "1,2,3" / "4,5" / "6,7"
 
 .EXAMPLE
-    Split-Array -InputObject @('a','b','c') -ChunkSize 10 -Verbose
+    Split-Array -InputObject 1..10 -ChunkSize 3 -Verbose
 
-    Because ChunkSize exceeds the element count, a single chunk is returned.
-    Use -Verbose to see processing details.
+    Runs with verbose output. Shows the active mode, input count, number of chunks
+    created, and the size of each chunk:
+
+      VERBOSE: Input count: 10
+      VERBOSE: Mode: ChunkSize
+      VERBOSE: ChunkSize: 3
+      VERBOSE: Chunks created: 4
+      VERBOSE: Chunk sizes: 3, 3, 3, 1
+
+.EXAMPLE
+    1..7 | Split-Array -MaxChunk 3 -Verbose
+
+    Verbose output for MaxChunk mode. Shows the base size and how the remainder
+    is distributed across the first chunks:
+
+      VERBOSE: Input count: 7
+      VERBOSE: Mode: MaxChunk
+      VERBOSE: MaxChunk: 3
+      VERBOSE: Base size: 2
+      VERBOSE: Remainder: 1
+      VERBOSE: Chunks created: 3
+      VERBOSE: Chunk sizes: 3, 2, 2
 
 .NOTES
     The function always returns an array of arrays, even when the result contains
     only a single chunk. This ensures a consistent return type that can always
     be iterated without type-checking the output.
+
+    Use -Verbose to trace the splitting logic: input count, active mode, chunk
+    distribution, and final chunk sizes are all reported.
 #>
     [CmdletBinding(DefaultParameterSetName = 'BySize')]
     param(

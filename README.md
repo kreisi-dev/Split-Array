@@ -65,6 +65,34 @@ foreach ($chunk in $chunks) {
 | `Count <= MaxChunk` | Returns one chunk per element |
 | Empty input | Returns one empty chunk |
 
+## Verbose Output
+
+Add `-Verbose` to any call to trace the splitting logic — useful for debugging or understanding how elements are distributed.
+
+```powershell
+Split-Array -InputObject 1..10 -ChunkSize 3 -Verbose
+```
+```
+VERBOSE: Input count: 10
+VERBOSE: Mode: ChunkSize
+VERBOSE: ChunkSize: 3
+VERBOSE: Chunks created: 4
+VERBOSE: Chunk sizes: 3, 3, 3, 1
+```
+
+```powershell
+1..7 | Split-Array -MaxChunk 3 -Verbose
+```
+```
+VERBOSE: Input count: 7
+VERBOSE: Mode: MaxChunk
+VERBOSE: MaxChunk: 3
+VERBOSE: Base size: 2
+VERBOSE: Remainder: 1
+VERBOSE: Chunks created: 3
+VERBOSE: Chunk sizes: 3, 2, 2
+```
+
 ## Tests
 
 Tests are written with [Pester](https://pester.dev) v5.

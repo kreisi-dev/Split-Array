@@ -14,14 +14,15 @@ Dot-source the script in your session or profile:
 
 ### Split by chunk size (`-ChunkSize`)
 
-Specifies the maximum number of elements per chunk.
+Specifies the maximum number of elements per chunk. Each chunk has exactly that
+size — except the last one, which may be smaller if the count does not divide evenly.
 
 ```powershell
-Split-Array -InputObject 1..10 -ChunkSize 3
-# Returns: (1,2,3), (4,5,6), (7,8,9), (10)
+Split-Array -InputObject 1..9 -ChunkSize 3
+# Returns: (1,2,3), (4,5,6), (7,8,9)
 
-1..10 | Split-Array -ChunkSize 4
-# Returns: (1,2,3,4), (5,6,7,8), (9,10)
+Split-Array -InputObject 1..10 -ChunkSize 3
+# Returns: (1,2,3), (4,5,6), (7,8,9), (10)  ← last chunk smaller
 ```
 
 ### Split into N chunks (`-MaxChunk`)

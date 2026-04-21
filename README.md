@@ -70,14 +70,16 @@ foreach ($chunk in $chunks) {
 Add `-Verbose` to any call to trace the splitting logic — useful for debugging or understanding how elements are distributed.
 
 ```powershell
-Split-Array -InputObject 1..10 -ChunkSize 3 -Verbose
+Split-Array -InputObject 1..10 -MaxChunk 4 -Verbose
 ```
 ```
 VERBOSE: Input count: 10
-VERBOSE: Mode: ChunkSize
-VERBOSE: ChunkSize: 3
+VERBOSE: Mode: MaxChunk
+VERBOSE: MaxChunk: 4
+VERBOSE: Base size: 2
+VERBOSE: Remainder: 2
 VERBOSE: Chunks created: 4
-VERBOSE: Chunk sizes: 3, 3, 3, 1
+VERBOSE: Chunk sizes: 3, 3, 2, 2
 ```
 
 ```powershell

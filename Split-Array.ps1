@@ -61,16 +61,18 @@ function Split-Array {
     Processes each chunk individually. Output: "1,2,3" / "4,5" / "6,7"
 
 .EXAMPLE
-    Split-Array -InputObject 1..10 -ChunkSize 3 -Verbose
+    Split-Array -InputObject 1..10 -MaxChunk 4 -Verbose
 
-    Runs with verbose output. Shows the active mode, input count, number of chunks
-    created, and the size of each chunk:
+    Verbose output showing how 10 elements are evenly distributed across 4 chunks.
+    The remainder (2) is spread one-by-one across the first chunks:
 
       VERBOSE: Input count: 10
-      VERBOSE: Mode: ChunkSize
-      VERBOSE: ChunkSize: 3
+      VERBOSE: Mode: MaxChunk
+      VERBOSE: MaxChunk: 4
+      VERBOSE: Base size: 2
+      VERBOSE: Remainder: 2
       VERBOSE: Chunks created: 4
-      VERBOSE: Chunk sizes: 3, 3, 3, 1
+      VERBOSE: Chunk sizes: 3, 3, 2, 2
 
 .EXAMPLE
     1..7 | Split-Array -MaxChunk 3 -Verbose

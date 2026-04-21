@@ -58,6 +58,15 @@ Describe 'Split-Array' {
             $result[2].Count | Should -Be 3
         }
 
+        It 'splits 10 elements into 4 chunks evenly (3,3,2,2)' {
+            $result = Split-Array -InputObject (1..10) -MaxChunk 4
+            $result.Count    | Should -Be 4
+            $result[0].Count | Should -Be 3
+            $result[1].Count | Should -Be 3
+            $result[2].Count | Should -Be 2
+            $result[3].Count | Should -Be 2
+        }
+
         It 'splits 7 elements into 3 chunks' {
             $result = Split-Array -InputObject (1..7) -MaxChunk 3
             $result.Count    | Should -Be 3

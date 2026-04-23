@@ -195,6 +195,73 @@ Describe 'Split-Array' {
         }
     }
 
+    Context 'BySize — Pad' {
+
+        It 'pads the last chunk to ChunkSize with $null' {
+            $result = Split-Array -InputObject (1..10) -ChunkSize 3 -Pad $null
+            $result.Count    | Should -Be 4
+            $result[0]       | Should -Be @(1, 2, 3)
+            $result[3].Count | Should -Be 3
+            $result[3][0]    | Should -Be 10
+            $result[3][1]    | Should -BeNullOrEmpty
+            $result[3][2]    | Should -BeNullOrEmpty
+        }
+
+        It 'pads the last chunk with a custom value' {
+            $result = Split-Array -InputObject (1..7) -ChunkSize 4 -Pad 0
+            $result.Count | Should -Be 2
+            $result[0]    | Should -Be @(1, 2, 3, 4)
+            $result[1]    | Should -Be @(5, 6, 7, 0)
+        }
+
+        It 'pads the last chunk with a custom string value' {
+            $result = Split-Array -InputObject (1..5) -ChunkSize 3 -Pad 'x'
+            $result.Count | Should -Be 2
+            $result[1]    | Should -Be @(4, 5, 'x')
+        }
+
+        It 'does not pad when all chunks are already the same size' {
+            $result = Split-Array -InputObject (1..9) -ChunkSize 3 -Pad $null
+            $result.Count | Should -Be 3
+            $result | ForEach-Object { $_.Count | Should -Be 3 }
+        }
+
+        It 'pads correctly with Distribution Even' {
+            $result = Split-Array -InputObject (1..10) -ChunkSize 3 -Distribution Even -Pad $null
+            # Even: (1,2,3),(4,5,6),(7,8),(9,10) — last padded from 2 to 3
+            $result.Count    | Should -Be 4
+            $result[3].Count | Should -Be 3
+            $result[3][0]    | Should -Be 9
+            $result[3][1]    | Should -Be 10
+            $result[3][2]    | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'ByMaxChunk — Pad' {
+
+        It 'pads the last chunk with $null (Greedy)' {
+            $result = Split-Array -InputObject (1..10) -MaxChunk 4 -Distribution Greedy -Pad $null
+            $result.Count    | Should -Be 4
+            $result[3].Count | Should -Be 3
+            $result[3][0]    | Should -Be 10
+            $result[3][1]    | Should -BeNullOrEmpty
+            $result[3][2]    | Should -BeNullOrEmpty
+        }
+
+        It 'pads the last chunk with a custom value (Even)' {
+            $result = Split-Array -InputObject (1..10) -MaxChunk 4 -Pad 0
+            # Even: (1,2,3),(4,5,6),(7,8),(9,10) — last padded from 2 to 3
+            $result.Count | Should -Be 4
+            $result[3]    | Should -Be @(9, 10, 0)
+        }
+
+        It 'does not pad when all chunks are the same size' {
+            $result = Split-Array -InputObject (1..9) -MaxChunk 3 -Pad $null
+            $result.Count | Should -Be 3
+            $result | ForEach-Object { $_.Count | Should -Be 3 }
+        }
+    }
+
     Context 'BySize — pipeline input with Distribution' {
 
         It 'accepts pipeline input with Distribution Even' {

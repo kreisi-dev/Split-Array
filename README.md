@@ -57,6 +57,24 @@ Both strategies produce identical results when the element count divides evenly.
 > yields 3 chunks of 2 (not 4), because `ceil(6/4)=2` divides 6 into 3 full chunks.
 > Use `-Distribution Even` if you need exactly `MaxChunk` chunks.
 
+### Pad the last chunk (`-Pad`)
+
+Fills the last chunk with a value until it matches the size of the first chunk.
+Useful when downstream code expects all chunks to be the same size.
+
+```powershell
+Split-Array -InputObject 1..10 -ChunkSize 3 -Pad $null
+# Returns: (1,2,3), (4,5,6), (7,8,9), (10,$null,$null)
+
+Split-Array -InputObject 1..7 -ChunkSize 4 -Pad 0
+# Returns: (1,2,3,4), (5,6,7,0)
+
+Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy -Pad $null
+# Returns: (1,2,3), (4,5,6), (7,8,9), (10,$null,$null)
+```
+
+`-Pad` has no effect when the last chunk is already the same size as the first.
+
 ### Iterating over chunks
 
 ```powershell
@@ -78,6 +96,7 @@ foreach ($chunk in $chunks) {
 | `ChunkSize` | `Int` | Maximum number of elements per chunk. |
 | `MaxChunk` | `Int` | Desired number of output chunks. |
 | `Distribution` | `String` | `Greedy` or `Even`. Controls how the remainder is placed. |
+| `Pad` | `Object` | Value to fill the last chunk with (e.g. `$null`, `0`, `'x'`). |
 
 `-ChunkSize` and `-MaxChunk` are mutually exclusive.
 

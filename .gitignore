@@ -27,3 +27,6 @@ $RECYCLE.BIN/
 # Environment / secrets
 .env
 .env.*
+
+# Generated reports
+test-report.html

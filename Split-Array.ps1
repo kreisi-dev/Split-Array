@@ -1,7 +1,7 @@
 function Split-Array {
 <#
 .SYNOPSIS
-    Splits an array into evenly distributed sub-arrays (chunks).
+    Splits an array into sub-arrays (chunks) using a configurable distribution strategy.
 
 .DESCRIPTION
     Split-Array accepts an array — either as a direct argument or from the pipeline —
@@ -10,11 +10,26 @@ function Split-Array {
     Two modes are available:
 
       -ChunkSize  Specifies the maximum number of elements per chunk.
-                  The last chunk may be smaller if the total count does not divide evenly.
 
       -MaxChunk   Specifies the desired number of chunks.
-                  Elements are distributed as evenly as possible; any remainder
-                  is spread across the first chunks (one extra element each).
+
+    For each mode, the -Distribution parameter controls how elements are arranged:
+
+      Greedy      Fill each chunk as much as possible; the last chunk may be smaller.
+                  This is the default for -ChunkSize.
+
+      Even        Spread any remainder across chunks so sizes differ by at most one.
+                  This is the default for -MaxChunk.
+
+    Example — 1..10 with -MaxChunk 4:
+
+      Greedy → (1,2,3), (4,5,6), (7,8,9), (10)    chunks: 3,3,3,1
+      Even   → (1,2,3), (4,5,6), (7,8),   (9,10)   chunks: 3,3,2,2
+
+    Example — 1..10 with -ChunkSize 3:
+
+      Greedy → (1,2,3), (4,5,6), (7,8,9), (10)    chunks: 3,3,3,1
+      Even   → (1,2,3), (4,5,6), (7,8),   (9,10)   chunks: 3,3,2,2
 
 .PARAMETER InputObject
     The array or individual elements to split.
@@ -24,12 +39,30 @@ function Split-Array {
     Maximum number of elements per chunk (ParameterSet: BySize).
     Must be greater than 0.
     If ChunkSize >= element count, a single chunk containing all elements is returned.
+    Default distribution: Greedy.
 
 .PARAMETER MaxChunk
     Desired number of output chunks (ParameterSet: ByMaxChunk).
     Must be greater than 0.
     If MaxChunk = 1, a single chunk is always returned.
     If element count <= MaxChunk, each element is returned in its own chunk.
+    Default distribution: Even.
+
+.PARAMETER Distribution
+    Controls how elements are placed into chunks. Applies to both -ChunkSize and -MaxChunk.
+
+      Greedy  Fill each chunk as much as possible; the last chunk absorbs any remainder.
+              Default when using -ChunkSize.
+
+              Note: when used with -MaxChunk, Greedy may produce fewer than MaxChunk chunks.
+              Example: 1..6 with -MaxChunk 4 -Distribution Greedy yields 3 chunks of 2,
+              because ceil(6/4)=2 divides 6 evenly into 3 full chunks.
+              Use -Distribution Even to always get exactly MaxChunk chunks.
+
+      Even    Spread the remainder one element at a time across the first chunks,
+              so chunk sizes differ by at most one. Always produces exactly MaxChunk chunks
+              (when Count > MaxChunk).
+              Default when using -MaxChunk.
 
 .INPUTS
     System.Object
@@ -42,17 +75,31 @@ function Split-Array {
 .EXAMPLE
     Split-Array -InputObject 1..10 -ChunkSize 3
 
-    Returns four chunks: (1,2,3), (4,5,6), (7,8,9), (10).
+    Greedy (default): four chunks of 3, 3, 3, 1.
+    Returns: (1,2,3), (4,5,6), (7,8,9), (10)
+
+.EXAMPLE
+    Split-Array -InputObject 1..10 -ChunkSize 3 -Distribution Even
+
+    Even: four chunks of 3, 3, 2, 2 — no chunk is more than one element larger than another.
+    Returns: (1,2,3), (4,5,6), (7,8), (9,10)
+
+.EXAMPLE
+    Split-Array -InputObject 1..10 -MaxChunk 4
+
+    Even (default): four chunks of 3, 3, 2, 2.
+    Returns: (1,2,3), (4,5,6), (7,8), (9,10)
+
+.EXAMPLE
+    Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy
+
+    Greedy: four chunks of 3, 3, 3, 1 — chunks filled first, remainder in the last.
+    Returns: (1,2,3), (4,5,6), (7,8,9), (10)
 
 .EXAMPLE
     1..10 | Split-Array -ChunkSize 4
 
-    Pipeline variant. Returns three chunks: (1,2,3,4), (5,6,7,8), (9,10).
-
-.EXAMPLE
-    Split-Array -InputObject 1..10 -MaxChunk 3
-
-    Returns three evenly distributed chunks: (1,2,3,4), (5,6,7), (8,9,10).
+    Pipeline variant with Greedy (default). Returns: (1,2,3,4), (5,6,7,8), (9,10).
 
 .EXAMPLE
     $chunks = Split-Array -InputObject 1..7 -MaxChunk 3
@@ -63,56 +110,72 @@ function Split-Array {
 .EXAMPLE
     Split-Array -InputObject 1..10 -MaxChunk 4 -Verbose
 
-    Verbose output showing how 10 elements are evenly distributed across 4 chunks.
-    The remainder (2) is spread one-by-one across the first chunks:
+    Verbose output showing how 10 elements are distributed across 4 chunks (Even mode):
 
       VERBOSE: Input count: 10
       VERBOSE: Mode: MaxChunk
       VERBOSE: MaxChunk: 4
+      VERBOSE: Distribution: Even
       VERBOSE: Base size: 2
       VERBOSE: Remainder: 2
       VERBOSE: Chunks created: 4
       VERBOSE: Chunk sizes: 3, 3, 2, 2
 
 .EXAMPLE
-    1..7 | Split-Array -MaxChunk 3 -Verbose
+    Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy -Verbose
 
-    Verbose output for MaxChunk mode. Shows the base size and how the remainder
-    is distributed across the first chunks:
+    Verbose output for Greedy mode:
 
-      VERBOSE: Input count: 7
+      VERBOSE: Input count: 10
       VERBOSE: Mode: MaxChunk
-      VERBOSE: MaxChunk: 3
+      VERBOSE: MaxChunk: 4
+      VERBOSE: Distribution: Greedy
+      VERBOSE: Base size: 3
+      VERBOSE: Chunks created: 4
+      VERBOSE: Chunk sizes: 3, 3, 3, 1
+
+.EXAMPLE
+    Split-Array -InputObject 1..10 -ChunkSize 3 -Distribution Even -Verbose
+
+    Verbose output for ChunkSize + Even mode. Number of chunks is derived from ChunkSize,
+    then elements are distributed evenly:
+
+      VERBOSE: Input count: 10
+      VERBOSE: Mode: ChunkSize
+      VERBOSE: ChunkSize: 3
+      VERBOSE: Distribution: Even
+      VERBOSE: Number of chunks: 4
       VERBOSE: Base size: 2
-      VERBOSE: Remainder: 1
-      VERBOSE: Chunks created: 3
-      VERBOSE: Chunk sizes: 3, 2, 2
+      VERBOSE: Remainder: 2
+      VERBOSE: Chunks created: 4
+      VERBOSE: Chunk sizes: 3, 3, 2, 2
 
 .NOTES
     The function always returns an array of arrays, even when the result contains
     only a single chunk. This ensures a consistent return type that can always
     be iterated without type-checking the output.
 
-    Use -Verbose to trace the splitting logic: input count, active mode, chunk
-    distribution, and final chunk sizes are all reported.
+    Use -Verbose to trace the splitting logic: input count, active mode, distribution
+    strategy, chunk distribution, and final chunk sizes are all reported.
 #>
     [CmdletBinding(DefaultParameterSetName = 'BySize')]
     param(
-        # Allow pipeline input
         [Parameter(ValueFromPipeline = $true, Position = 0)]
         [object]$InputObject,
 
-        # Mode 1: ChunkSize
         [Parameter(ParameterSetName = 'BySize')]
         [int]$ChunkSize,
 
-        # Mode 2: MaxChunk
         [Parameter(ParameterSetName = 'ByMaxChunk')]
-        [int]$MaxChunk
+        [int]$MaxChunk,
+
+        [Parameter(ParameterSetName = 'BySize')]
+        [Parameter(ParameterSetName = 'ByMaxChunk')]
+        [ValidateSet('Greedy', 'Even')]
+        [string]$Distribution
     )
 
     begin {
-        # Buffer for pipeline input
         $buffer = New-Object System.Collections.Generic.List[object]
     }
 
@@ -139,6 +202,15 @@ function Split-Array {
             return ,$chunks
         }
 
+        # Apply per-mode default when Distribution is not specified
+        $effectiveDistribution = if ($Distribution) {
+            $Distribution
+        } elseif ($PSCmdlet.ParameterSetName -eq 'BySize') {
+            'Greedy'
+        } else {
+            'Even'
+        }
+
         #
         # MODE: ChunkSize
         #
@@ -146,10 +218,10 @@ function Split-Array {
 
             Write-Verbose "Mode: ChunkSize"
             Write-Verbose "ChunkSize: $ChunkSize"
+            Write-Verbose "Distribution: $effectiveDistribution"
 
             if ($ChunkSize -le 0) { throw "ChunkSize must be greater than zero." }
 
-            # If ChunkSize >= Count, return one chunk
             if ($ChunkSize -ge $Count) {
                 Write-Verbose "ChunkSize >= count, returning a single chunk."
                 Write-Verbose "Chunk sizes: $Count"
@@ -157,17 +229,32 @@ function Split-Array {
                 return ,$chunks
             }
 
-            # Normal splitting
             $chunks = @()
 
-            for ($i = 0; $i -lt $Count; $i += $ChunkSize) {
-                $end = [Math]::Min($i + $ChunkSize - 1, $Count - 1)
-                $chunk = $Array[$i..$end]
-                $chunks += ,$chunk
+            if ($effectiveDistribution -eq 'Greedy') {
+                for ($i = 0; $i -lt $Count; $i += $ChunkSize) {
+                    $end = [Math]::Min($i + $ChunkSize - 1, $Count - 1)
+                    $chunks += ,$Array[$i..$end]
+                }
+            } else {
+                # Even: determine number of chunks from ChunkSize, then distribute evenly
+                $numChunks = [Math]::Ceiling($Count / $ChunkSize)
+                $BaseSize  = [Math]::Floor($Count / $numChunks)
+                $Remainder = $Count % $numChunks
+                Write-Verbose "Number of chunks: $numChunks"
+                Write-Verbose "Base size: $BaseSize"
+                Write-Verbose "Remainder: $Remainder"
+                $index = 0
+                for ($i = 1; $i -le $numChunks; $i++) {
+                    $size = $BaseSize
+                    if ($Remainder -gt 0) { $size++; $Remainder-- }
+                    $chunks += ,$Array[$index..($index + $size - 1)]
+                    $index += $size
+                }
             }
 
             Write-Verbose "Chunks created: $($chunks.Count)"
-            Write-Verbose "Chunk sizes: $(( $chunks | ForEach-Object { $_.Count }) -join ', ')"
+            Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
 
             return ,$chunks
         }
@@ -179,10 +266,10 @@ function Split-Array {
 
             Write-Verbose "Mode: MaxChunk"
             Write-Verbose "MaxChunk: $MaxChunk"
+            Write-Verbose "Distribution: $effectiveDistribution"
 
             if ($MaxChunk -le 0) { throw "MaxChunk must be greater than zero." }
 
-            # MaxChunk = 1 → ALWAYS return a single chunk
             if ($MaxChunk -eq 1) {
                 Write-Verbose "MaxChunk = 1 → Returning a single chunk."
                 Write-Verbose "Chunk sizes: $Count"
@@ -190,7 +277,6 @@ function Split-Array {
                 return ,$chunks
             }
 
-            # If array smaller than MaxChunk → return single-item chunks
             if ($Count -le $MaxChunk) {
                 Write-Verbose "Count <= MaxChunk → Returning $Count single-item chunks."
                 $chunks = @()
@@ -198,32 +284,34 @@ function Split-Array {
                 return ,$chunks
             }
 
-            # Even distribution with remainder
-            $BaseSize  = [Math]::Floor($Count / $MaxChunk)
-            $Remainder = $Count % $MaxChunk
-
-            Write-Verbose "Base size: $BaseSize"
-            Write-Verbose "Remainder: $Remainder"
-
             $chunks = @()
-            $index = 0
 
-            for ($i = 1; $i -le $MaxChunk; $i++) {
-
-                $size = $BaseSize
-                if ($Remainder -gt 0) {
-                    $size++
-                    $Remainder--
+            if ($effectiveDistribution -eq 'Even') {
+                $BaseSize  = [Math]::Floor($Count / $MaxChunk)
+                $Remainder = $Count % $MaxChunk
+                Write-Verbose "Base size: $BaseSize"
+                Write-Verbose "Remainder: $Remainder"
+                $index = 0
+                for ($i = 1; $i -le $MaxChunk; $i++) {
+                    $size = $BaseSize
+                    if ($Remainder -gt 0) { $size++; $Remainder-- }
+                    $chunks += ,$Array[$index..($index + $size - 1)]
+                    $index += $size
                 }
-
-                $chunk = $Array[$index..($index + $size - 1)]
-                $index += $size
-
-                $chunks += ,$chunk
+            } else {
+                # Greedy: fill each chunk to ceil(Count/MaxChunk); last chunk absorbs remainder
+                $BaseSize = [Math]::Ceiling($Count / $MaxChunk)
+                Write-Verbose "Base size: $BaseSize"
+                $index = 0
+                while ($index -lt $Count) {
+                    $end = [Math]::Min($index + $BaseSize - 1, $Count - 1)
+                    $chunks += ,$Array[$index..$end]
+                    $index += $BaseSize
+                }
             }
 
-            Write-Verbose "Chunks created: $MaxChunk"
-            Write-Verbose "Chunk sizes: $(( $chunks | ForEach-Object { $_.Count }) -join ', ')"
+            Write-Verbose "Chunks created: $($chunks.Count)"
+            Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
 
             return ,$chunks
         }

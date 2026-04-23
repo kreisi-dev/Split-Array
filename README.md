@@ -1,6 +1,6 @@
 # Split-Array
 
-A PowerShell function that splits an array into evenly distributed sub-arrays (chunks).
+A PowerShell function that splits an array into sub-arrays (chunks) with configurable distribution.
 
 ## Installation
 
@@ -14,25 +14,48 @@ Dot-source the script in your session or profile:
 
 ### Split by chunk size (`-ChunkSize`)
 
-Specifies the maximum number of elements per chunk. Each chunk has exactly that
-size — except the last one, which may be smaller if the count does not divide evenly.
+Specifies the maximum number of elements per chunk. Default distribution: **Greedy**.
 
 ```powershell
-Split-Array -InputObject 1..9 -ChunkSize 3
-# Returns: (1,2,3), (4,5,6), (7,8,9)
-
 Split-Array -InputObject 1..10 -ChunkSize 3
-# Returns: (1,2,3), (4,5,6), (7,8,9), (10)  ← last chunk smaller
+# Greedy (default): (1,2,3), (4,5,6), (7,8,9), (10)
+
+Split-Array -InputObject 1..10 -ChunkSize 3 -Distribution Even
+# Even: (1,2,3), (4,5,6), (7,8), (9,10)
 ```
 
 ### Split into N chunks (`-MaxChunk`)
 
-Specifies the desired number of chunks. Elements are distributed as evenly as possible.
+Specifies the desired number of chunks. Default distribution: **Even**.
 
 ```powershell
-Split-Array -InputObject 1..10 -MaxChunk 3
-# Returns: (1,2,3,4), (5,6,7), (8,9,10)
+Split-Array -InputObject 1..10 -MaxChunk 4
+# Even (default): (1,2,3), (4,5,6), (7,8), (9,10)
+
+Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy
+# Greedy: (1,2,3), (4,5,6), (7,8,9), (10)
 ```
+
+### Distribution strategies
+
+| Strategy | Behavior | Default for |
+|---|---|---|
+| `Greedy` | Fill each chunk to maximum; last chunk absorbs the remainder | `-ChunkSize` |
+| `Even` | Spread the remainder one element at a time across the first chunks; always produces exactly `MaxChunk` chunks | `-MaxChunk` |
+
+With `1..10` and `-MaxChunk 4`:
+
+| Strategy | Chunks | Sizes |
+|---|---|---|
+| `Greedy` | `(1,2,3)`, `(4,5,6)`, `(7,8,9)`, `(10)` | 3, 3, 3, 1 |
+| `Even` | `(1,2,3)`, `(4,5,6)`, `(7,8)`, `(9,10)` | 3, 3, 2, 2 |
+
+Both strategies produce identical results when the element count divides evenly.
+
+> **Note — Greedy with `-MaxChunk`:** When `ceil(Count/MaxChunk)` divides `Count` evenly, Greedy
+> produces **fewer** than `MaxChunk` chunks. Example: `1..6 -MaxChunk 4 -Distribution Greedy`
+> yields 3 chunks of 2 (not 4), because `ceil(6/4)=2` divides 6 into 3 full chunks.
+> Use `-Distribution Even` if you need exactly `MaxChunk` chunks.
 
 ### Iterating over chunks
 
@@ -54,6 +77,7 @@ foreach ($chunk in $chunks) {
 | `InputObject` | `Object` | Array or elements to split. Accepts pipeline input. |
 | `ChunkSize` | `Int` | Maximum number of elements per chunk. |
 | `MaxChunk` | `Int` | Desired number of output chunks. |
+| `Distribution` | `String` | `Greedy` or `Even`. Controls how the remainder is placed. |
 
 `-ChunkSize` and `-MaxChunk` are mutually exclusive.
 
@@ -68,7 +92,7 @@ foreach ($chunk in $chunks) {
 
 ## Verbose Output
 
-Add `-Verbose` to any call to trace the splitting logic — useful for debugging or understanding how elements are distributed.
+Add `-Verbose` to any call to trace the splitting logic.
 
 ```powershell
 Split-Array -InputObject 1..10 -MaxChunk 4 -Verbose
@@ -77,6 +101,7 @@ Split-Array -InputObject 1..10 -MaxChunk 4 -Verbose
 VERBOSE: Input count: 10
 VERBOSE: Mode: MaxChunk
 VERBOSE: MaxChunk: 4
+VERBOSE: Distribution: Even
 VERBOSE: Base size: 2
 VERBOSE: Remainder: 2
 VERBOSE: Chunks created: 4
@@ -84,16 +109,31 @@ VERBOSE: Chunk sizes: 3, 3, 2, 2
 ```
 
 ```powershell
-1..7 | Split-Array -MaxChunk 3 -Verbose
+Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy -Verbose
 ```
 ```
-VERBOSE: Input count: 7
+VERBOSE: Input count: 10
 VERBOSE: Mode: MaxChunk
-VERBOSE: MaxChunk: 3
+VERBOSE: MaxChunk: 4
+VERBOSE: Distribution: Greedy
+VERBOSE: Base size: 3
+VERBOSE: Chunks created: 4
+VERBOSE: Chunk sizes: 3, 3, 3, 1
+```
+
+```powershell
+Split-Array -InputObject 1..10 -ChunkSize 3 -Distribution Even -Verbose
+```
+```
+VERBOSE: Input count: 10
+VERBOSE: Mode: ChunkSize
+VERBOSE: ChunkSize: 3
+VERBOSE: Distribution: Even
+VERBOSE: Number of chunks: 4
 VERBOSE: Base size: 2
-VERBOSE: Remainder: 1
-VERBOSE: Chunks created: 3
-VERBOSE: Chunk sizes: 3, 2, 2
+VERBOSE: Remainder: 2
+VERBOSE: Chunks created: 4
+VERBOSE: Chunk sizes: 3, 3, 2, 2
 ```
 
 ## Tests

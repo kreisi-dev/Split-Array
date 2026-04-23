@@ -54,8 +54,14 @@ function Split-Array {
       Greedy  Fill each chunk as much as possible; the last chunk absorbs any remainder.
               Default when using -ChunkSize.
 
+              Note: when used with -MaxChunk, Greedy may produce fewer than MaxChunk chunks.
+              Example: 1..6 with -MaxChunk 4 -Distribution Greedy yields 3 chunks of 2,
+              because ceil(6/4)=2 divides 6 evenly into 3 full chunks.
+              Use -Distribution Even to always get exactly MaxChunk chunks.
+
       Even    Spread the remainder one element at a time across the first chunks,
-              so chunk sizes differ by at most one.
+              so chunk sizes differ by at most one. Always produces exactly MaxChunk chunks
+              (when Count > MaxChunk).
               Default when using -MaxChunk.
 
 .INPUTS
@@ -127,6 +133,22 @@ function Split-Array {
       VERBOSE: Base size: 3
       VERBOSE: Chunks created: 4
       VERBOSE: Chunk sizes: 3, 3, 3, 1
+
+.EXAMPLE
+    Split-Array -InputObject 1..10 -ChunkSize 3 -Distribution Even -Verbose
+
+    Verbose output for ChunkSize + Even mode. Number of chunks is derived from ChunkSize,
+    then elements are distributed evenly:
+
+      VERBOSE: Input count: 10
+      VERBOSE: Mode: ChunkSize
+      VERBOSE: ChunkSize: 3
+      VERBOSE: Distribution: Even
+      VERBOSE: Number of chunks: 4
+      VERBOSE: Base size: 2
+      VERBOSE: Remainder: 2
+      VERBOSE: Chunks created: 4
+      VERBOSE: Chunk sizes: 3, 3, 2, 2
 
 .NOTES
     The function always returns an array of arrays, even when the result contains

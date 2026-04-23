@@ -162,10 +162,19 @@ Describe 'Split-Array' {
 
         It 'distributes 10 elements into 3 chunks greedily (4,4,2)' {
             $result = Split-Array -InputObject (1..10) -MaxChunk 3 -Distribution Greedy
-            $result.Count    | Should -Be 3
-            $result[0].Count | Should -Be 4
-            $result[1].Count | Should -Be 4
-            $result[2].Count | Should -Be 2
+            $result.Count | Should -Be 3
+            $result[0]    | Should -Be @(1, 2, 3, 4)
+            $result[1]    | Should -Be @(5, 6, 7, 8)
+            $result[2]    | Should -Be @(9, 10)
+        }
+
+        It 'produces fewer than MaxChunk chunks when count divides evenly into base size' {
+            # 6 elements, MaxChunk=4: ceil(6/4)=2, so 3 full chunks of 2 — not 4
+            $result = Split-Array -InputObject (1..6) -MaxChunk 4 -Distribution Greedy
+            $result.Count | Should -Be 3
+            $result[0]    | Should -Be @(1, 2)
+            $result[1]    | Should -Be @(3, 4)
+            $result[2]    | Should -Be @(5, 6)
         }
 
         It 'distributes 7 elements into 3 chunks greedily (3,3,1)' {
@@ -186,10 +195,35 @@ Describe 'Split-Array' {
         }
     }
 
+    Context 'BySize — pipeline input with Distribution' {
+
+        It 'accepts pipeline input with Distribution Even' {
+            $result = 1..7 | Split-Array -ChunkSize 3 -Distribution Even
+            $result.Count    | Should -Be 3
+            $result[0].Count | Should -Be 3
+            $result[1].Count | Should -Be 2
+            $result[2].Count | Should -Be 2
+        }
+
+        It 'accepts pipeline input with Distribution Greedy' {
+            $result = 1..7 | Split-Array -ChunkSize 3 -Distribution Greedy
+            $result.Count    | Should -Be 3
+            $result[0].Count | Should -Be 3
+            $result[1].Count | Should -Be 3
+            $result[2].Count | Should -Be 1
+        }
+    }
+
     Context 'Edge cases' {
 
-        It 'returns one empty chunk for empty input' {
+        It 'returns one empty chunk for empty input with ChunkSize' {
             $result = Split-Array -InputObject @() -ChunkSize 3
+            $result.Count    | Should -Be 1
+            $result[0].Count | Should -Be 0
+        }
+
+        It 'returns one empty chunk for empty input with MaxChunk' {
+            $result = Split-Array -InputObject @() -MaxChunk 3
             $result.Count    | Should -Be 1
             $result[0].Count | Should -Be 0
         }

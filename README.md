@@ -41,9 +41,9 @@ Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy
 | Strategy | Behavior | Default for |
 |---|---|---|
 | `Greedy` | Fill each chunk to maximum; last chunk absorbs the remainder | `-ChunkSize` |
-| `Even` | Spread the remainder one element at a time across the first chunks | `-MaxChunk` |
+| `Even` | Spread the remainder one element at a time across the first chunks; always produces exactly `MaxChunk` chunks | `-MaxChunk` |
 
-With the same input `1..10` and 4 chunks:
+With `1..10` and `-MaxChunk 4`:
 
 | Strategy | Chunks | Sizes |
 |---|---|---|
@@ -51,6 +51,11 @@ With the same input `1..10` and 4 chunks:
 | `Even` | `(1,2,3)`, `(4,5,6)`, `(7,8)`, `(9,10)` | 3, 3, 2, 2 |
 
 Both strategies produce identical results when the element count divides evenly.
+
+> **Note — Greedy with `-MaxChunk`:** When `ceil(Count/MaxChunk)` divides `Count` evenly, Greedy
+> produces **fewer** than `MaxChunk` chunks. Example: `1..6 -MaxChunk 4 -Distribution Greedy`
+> yields 3 chunks of 2 (not 4), because `ceil(6/4)=2` divides 6 into 3 full chunks.
+> Use `-Distribution Even` if you need exactly `MaxChunk` chunks.
 
 ### Iterating over chunks
 
@@ -114,6 +119,21 @@ VERBOSE: Distribution: Greedy
 VERBOSE: Base size: 3
 VERBOSE: Chunks created: 4
 VERBOSE: Chunk sizes: 3, 3, 3, 1
+```
+
+```powershell
+Split-Array -InputObject 1..10 -ChunkSize 3 -Distribution Even -Verbose
+```
+```
+VERBOSE: Input count: 10
+VERBOSE: Mode: ChunkSize
+VERBOSE: ChunkSize: 3
+VERBOSE: Distribution: Even
+VERBOSE: Number of chunks: 4
+VERBOSE: Base size: 2
+VERBOSE: Remainder: 2
+VERBOSE: Chunks created: 4
+VERBOSE: Chunk sizes: 3, 3, 2, 2
 ```
 
 ## Tests

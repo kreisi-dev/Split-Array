@@ -31,6 +31,8 @@ function Split-Array {
       Greedy → (1,2,3), (4,5,6), (7,8,9), (10)    chunks: 3,3,3,1
       Even   → (1,2,3), (4,5,6), (7,8),   (9,10)   chunks: 3,3,2,2
 
+    Optionally, -Pad fills the last chunk to match the size of the first chunk.
+
 .PARAMETER InputObject
     The array or individual elements to split.
     Accepts pipeline input.
@@ -64,6 +66,12 @@ function Split-Array {
               (when Count > MaxChunk).
               Default when using -MaxChunk.
 
+.PARAMETER Pad
+    Pads the last chunk with the specified value until it matches the size of the first chunk.
+    Accepts any value including $null (use -Pad $null to pad with null).
+    Only applies when the last chunk is smaller than the first chunk.
+    Has no effect when all chunks are already the same size.
+
 .INPUTS
     System.Object
     Individual elements or arrays can be passed via the pipeline.
@@ -85,6 +93,18 @@ function Split-Array {
     Returns: (1,2,3), (4,5,6), (7,8), (9,10)
 
 .EXAMPLE
+    Split-Array -InputObject 1..10 -ChunkSize 3 -Pad $null
+
+    Greedy with padding: last chunk is padded to match ChunkSize.
+    Returns: (1,2,3), (4,5,6), (7,8,9), (10,$null,$null)
+
+.EXAMPLE
+    Split-Array -InputObject 1..7 -ChunkSize 4 -Pad 0
+
+    Greedy with a custom pad value.
+    Returns: (1,2,3,4), (5,6,7,0)
+
+.EXAMPLE
     Split-Array -InputObject 1..10 -MaxChunk 4
 
     Even (default): four chunks of 3, 3, 2, 2.
@@ -95,6 +115,12 @@ function Split-Array {
 
     Greedy: four chunks of 3, 3, 3, 1 — chunks filled first, remainder in the last.
     Returns: (1,2,3), (4,5,6), (7,8,9), (10)
+
+.EXAMPLE
+    Split-Array -InputObject 1..10 -MaxChunk 4 -Distribution Greedy -Pad $null
+
+    Greedy with padding: last chunk padded to match first chunk size.
+    Returns: (1,2,3), (4,5,6), (7,8,9), (10,$null,$null)
 
 .EXAMPLE
     1..10 | Split-Array -ChunkSize 4
@@ -150,6 +176,20 @@ function Split-Array {
       VERBOSE: Chunks created: 4
       VERBOSE: Chunk sizes: 3, 3, 2, 2
 
+.EXAMPLE
+    Split-Array -InputObject 1..10 -ChunkSize 3 -Pad $null -Verbose
+
+    Verbose output when padding is applied:
+
+      VERBOSE: Input count: 10
+      VERBOSE: Mode: ChunkSize
+      VERBOSE: ChunkSize: 3
+      VERBOSE: Distribution: Greedy
+      VERBOSE: Chunks created: 4
+      VERBOSE: Chunk sizes: 3, 3, 3, 1
+      VERBOSE: Pad value: ''
+      VERBOSE: Last chunk padded from 1 to 3 elements
+
 .NOTES
     The function always returns an array of arrays, even when the result contains
     only a single chunk. This ensures a consistent return type that can always
@@ -172,11 +212,16 @@ function Split-Array {
         [Parameter(ParameterSetName = 'BySize')]
         [Parameter(ParameterSetName = 'ByMaxChunk')]
         [ValidateSet('Greedy', 'Even')]
-        [string]$Distribution
+        [string]$Distribution,
+
+        [Parameter(ParameterSetName = 'BySize')]
+        [Parameter(ParameterSetName = 'ByMaxChunk')]
+        [object]$Pad
     )
 
     begin {
         $buffer = New-Object System.Collections.Generic.List[object]
+        $doPad  = $PSBoundParameters.ContainsKey('Pad')
     }
 
     process {
@@ -256,6 +301,8 @@ function Split-Array {
             Write-Verbose "Chunks created: $($chunks.Count)"
             Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
 
+            if ($doPad) { $chunks = Add-PadToLastChunk $chunks $Pad }
+
             return ,$chunks
         }
 
@@ -313,7 +360,31 @@ function Split-Array {
             Write-Verbose "Chunks created: $($chunks.Count)"
             Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
 
+            if ($doPad) { $chunks = Add-PadToLastChunk $chunks $Pad }
+
             return ,$chunks
         }
     }
+}
+
+function Add-PadToLastChunk {
+    param([object[]]$Chunks, [object]$PadValue)
+
+    $targetSize = $Chunks[0].Count
+    $last       = $Chunks[$Chunks.Count - 1]
+
+    Write-Verbose "Pad value: '$PadValue'"
+
+    if ($last.Count -ge $targetSize) {
+        Write-Verbose "Last chunk already full — no padding needed."
+        return $Chunks
+    }
+
+    $padded = New-Object object[] $targetSize
+    [Array]::Copy($last, $padded, $last.Count)
+    for ($j = $last.Count; $j -lt $targetSize; $j++) { $padded[$j] = $PadValue }
+
+    Write-Verbose "Last chunk padded from $($last.Count) to $targetSize elements."
+    $Chunks[$Chunks.Count - 1] = $padded
+    return $Chunks
 }

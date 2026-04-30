@@ -37,6 +37,17 @@ function Split-Array {
     The array or individual elements to split.
     Accepts pipeline input.
 
+    $null handling: $null values sent through the pipeline are silently ignored
+    and do not appear in the output. Arrays containing $null passed via
+    -InputObject do preserve $null elements, because the IEnumerable iteration
+    inside the function adds them directly to the buffer.
+
+    Nested arrays: non-string IEnumerable elements (e.g. inner arrays) received
+    via the pipeline are flattened one level, because PowerShell unrolls the
+    outer array before invoking the process block, and the function then iterates
+    each inner array in turn. When passing nested arrays via -InputObject, the
+    outer array is iterated once and inner arrays are kept as atomic elements.
+
 .PARAMETER ChunkSize
     Maximum number of elements per chunk (ParameterSet: BySize).
     Must be greater than 0.
@@ -190,6 +201,23 @@ function Split-Array {
       VERBOSE: Pad value: ''
       VERBOSE: Last chunk padded from 1 to 3 elements
 
+.EXAMPLE
+    $null | Split-Array -ChunkSize 2
+
+    $null sent via the pipeline is silently ignored; the function returns one empty chunk.
+    To preserve $null as an element, pass the array via -InputObject instead:
+    Split-Array -InputObject @(1, $null, 2) -ChunkSize 2
+    Returns: (1,$null), (2)
+
+.EXAMPLE
+    @(1,2), @(3,4) | Split-Array -ChunkSize 1
+
+    PowerShell unrolls the outer array in the pipeline; the function then iterates
+    each inner array, flattening them. Returns four single-element chunks: (1),(2),(3),(4).
+    To treat each inner array as one element, pass via -InputObject:
+    Split-Array -InputObject @(@(1,2), @(3,4)) -ChunkSize 1
+    Returns: ((1,2)), ((3,4))
+
 .NOTES
     The function always returns an array of arrays, even when the result contains
     only a single chunk. This ensures a consistent return type that can always
@@ -203,10 +231,12 @@ function Split-Array {
         [Parameter(ValueFromPipeline = $true, Position = 0)]
         [object]$InputObject,
 
-        [Parameter(ParameterSetName = 'BySize')]
+        [Parameter(ParameterSetName = 'BySize', Mandatory = $true)]
+        [ValidateRange(1, [int]::MaxValue)]
         [int]$ChunkSize,
 
-        [Parameter(ParameterSetName = 'ByMaxChunk')]
+        [Parameter(ParameterSetName = 'ByMaxChunk', Mandatory = $true)]
+        [ValidateRange(1, [int]::MaxValue)]
         [int]$MaxChunk,
 
         [Parameter(ParameterSetName = 'BySize')]
@@ -265,8 +295,6 @@ function Split-Array {
             Write-Verbose "ChunkSize: $ChunkSize"
             Write-Verbose "Distribution: $effectiveDistribution"
 
-            if ($ChunkSize -le 0) { throw "ChunkSize must be greater than zero." }
-
             if ($ChunkSize -ge $Count) {
                 Write-Verbose "ChunkSize >= count, returning a single chunk."
                 Write-Verbose "Chunk sizes: $Count"
@@ -314,8 +342,6 @@ function Split-Array {
             Write-Verbose "Mode: MaxChunk"
             Write-Verbose "MaxChunk: $MaxChunk"
             Write-Verbose "Distribution: $effectiveDistribution"
-
-            if ($MaxChunk -le 0) { throw "MaxChunk must be greater than zero." }
 
             if ($MaxChunk -eq 1) {
                 Write-Verbose "MaxChunk = 1 → Returning a single chunk."

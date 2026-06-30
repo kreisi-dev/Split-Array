@@ -1,5 +1,5 @@
 BeforeAll {
-    . "$PSScriptRoot/Split-Array.ps1"
+    Import-Module "$PSScriptRoot/../SplitArray/SplitArray.psd1" -Force
 }
 
 Describe 'Split-Array' {

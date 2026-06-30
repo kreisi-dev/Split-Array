@@ -1,13 +1,36 @@
-# Split-Array
+# SplitArray
 
-A PowerShell function that splits an array into sub-arrays (chunks) with configurable distribution.
+A PowerShell module whose `Split-Array` function splits an array into sub-arrays (chunks) with configurable distribution.
+
+A common use case is parallelization: to process data in parallel you first have to break it into portions (chunks). `Split-Array` does that once, so each script doesn't have to reimplement it.
+
+```
+        ONE ARRAY (8 elements)
+        [1,2,3,4,5,6,7,8]
+                │
+                ▼
+          ┌───────────────┐
+          │  Split-Array  │  splits by strategy
+          └───────────────┘
+                │
+                ▼
+   ARRAY OF ARRAYS (3 chunks)
+   [(1,2,3), (4,5,6), (7,8)]
+```
 
 ## Installation
 
-Dot-source the script in your session or profile:
+Import the module from a clone of this repository:
 
 ```powershell
-. ./Split-Array.ps1
+Import-Module ./SplitArray/SplitArray.psd1
+```
+
+To make it available in every session, copy the `SplitArray` folder into one of your
+`$env:PSModulePath` directories and import it by name:
+
+```powershell
+Import-Module SplitArray
 ```
 
 ## Usage
@@ -155,12 +178,29 @@ VERBOSE: Chunks created: 4
 VERBOSE: Chunk sizes: 3, 3, 2, 2
 ```
 
+## Module structure
+
+```
+SplitArray/
+├── SplitArray.psd1            # module manifest
+├── SplitArray.psm1            # loader: dot-sources Public/Private, exports public functions
+├── Public/
+│   └── Split-Array.ps1        # exported function
+└── Private/
+    └── Add-PadToLastChunk.ps1 # internal helper (not exported)
+tests/
+└── Split-Array.Tests.ps1      # Pester tests
+```
+
+Adding a new `.ps1` file under `Public/` or `Private/` is all it takes to extend the module —
+the loader picks it up automatically and exports everything in `Public/`.
+
 ## Tests
 
-Tests are written with [Pester](https://pester.dev) v5.
+Tests are written with [Pester](https://pester.dev) v5 and import the module under test.
 
 ```powershell
-Invoke-Pester ./Split-Array.Tests.ps1
+Invoke-Pester ./tests/Split-Array.Tests.ps1
 ```
 
 ## License

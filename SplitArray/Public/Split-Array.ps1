@@ -227,6 +227,7 @@ function Split-Array {
     strategy, chunk distribution, and final chunk sizes are all reported.
 #>
     [CmdletBinding(DefaultParameterSetName = 'BySize')]
+    [OutputType([object[]])]
     param(
         [Parameter(ValueFromPipeline = $true, Position = 0)]
         [object]$InputObject,
@@ -250,7 +251,7 @@ function Split-Array {
     )
 
     begin {
-        $buffer = New-Object System.Collections.Generic.List[object]
+        $buffer = [System.Collections.Generic.List[object]]::new()
         $doPad  = $PSBoundParameters.ContainsKey('Pad')
     }
 
@@ -266,129 +267,103 @@ function Split-Array {
 
     end {
 
-        $Array = $buffer.ToArray()
-        $Count = $Array.Count
+        $items = $buffer.ToArray()
+        $count = $items.Count
 
-        Write-Verbose "Input count: $Count"
+        Write-Verbose "Input count: $count"
 
-        if ($Count -eq 0) {
+        if ($count -eq 0) {
             Write-Verbose "Input empty — returning empty array."
-            $chunks = @(,@())
-            return ,$chunks
+            return ,@(,@())
         }
+
+        $bySize = $PSCmdlet.ParameterSetName -eq 'BySize'
 
         # Apply per-mode default when Distribution is not specified
         $effectiveDistribution = if ($Distribution) {
             $Distribution
-        } elseif ($PSCmdlet.ParameterSetName -eq 'BySize') {
+        } elseif ($bySize) {
             'Greedy'
         } else {
             'Even'
         }
 
-        #
-        # MODE: ChunkSize
-        #
-        if ($PSCmdlet.ParameterSetName -eq 'BySize') {
-
+        if ($bySize) {
             Write-Verbose "Mode: ChunkSize"
             Write-Verbose "ChunkSize: $ChunkSize"
-            Write-Verbose "Distribution: $effectiveDistribution"
-
-            if ($ChunkSize -ge $Count) {
-                Write-Verbose "ChunkSize >= count, returning a single chunk."
-                Write-Verbose "Chunk sizes: $Count"
-                $chunks = @(,$Array)
-                return ,$chunks
-            }
-
-            $chunks = @()
-
-            if ($effectiveDistribution -eq 'Greedy') {
-                for ($i = 0; $i -lt $Count; $i += $ChunkSize) {
-                    $end = [Math]::Min($i + $ChunkSize - 1, $Count - 1)
-                    $chunks += ,$Array[$i..$end]
-                }
-            } else {
-                # Even: determine number of chunks from ChunkSize, then distribute evenly
-                $numChunks = [Math]::Ceiling($Count / $ChunkSize)
-                $BaseSize  = [Math]::Floor($Count / $numChunks)
-                $Remainder = $Count % $numChunks
-                Write-Verbose "Number of chunks: $numChunks"
-                Write-Verbose "Base size: $BaseSize"
-                Write-Verbose "Remainder: $Remainder"
-                $index = 0
-                for ($i = 1; $i -le $numChunks; $i++) {
-                    $size = $BaseSize
-                    if ($Remainder -gt 0) { $size++; $Remainder-- }
-                    $chunks += ,$Array[$index..($index + $size - 1)]
-                    $index += $size
-                }
-            }
-
-            Write-Verbose "Chunks created: $($chunks.Count)"
-            Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
-
-            if ($doPad) { $chunks = Add-PadToLastChunk $chunks $Pad }
-
-            return ,$chunks
-        }
-
-        #
-        # MODE: MaxChunk
-        #
-        if ($PSCmdlet.ParameterSetName -eq 'ByMaxChunk') {
-
+        } else {
             Write-Verbose "Mode: MaxChunk"
             Write-Verbose "MaxChunk: $MaxChunk"
-            Write-Verbose "Distribution: $effectiveDistribution"
+        }
+        Write-Verbose "Distribution: $effectiveDistribution"
 
+        # Trivial cases that need no distribution logic
+        if ($bySize -and $ChunkSize -ge $count) {
+            Write-Verbose "ChunkSize >= count, returning a single chunk."
+            Write-Verbose "Chunk sizes: $count"
+            return ,@(,$items)
+        }
+
+        if (-not $bySize) {
             if ($MaxChunk -eq 1) {
                 Write-Verbose "MaxChunk = 1 → Returning a single chunk."
-                Write-Verbose "Chunk sizes: $Count"
-                $chunks = @(,$Array)
-                return ,$chunks
+                Write-Verbose "Chunk sizes: $count"
+                return ,@(,$items)
             }
 
-            if ($Count -le $MaxChunk) {
-                Write-Verbose "Count <= MaxChunk → Returning $Count single-item chunks."
-                $chunks = @()
-                foreach ($item in $Array) { $chunks += ,@($item) }
-                return ,$chunks
+            if ($count -le $MaxChunk) {
+                Write-Verbose "Count <= MaxChunk → Returning $count single-item chunks."
+                $singles = [System.Collections.Generic.List[object]]::new()
+                foreach ($item in $items) { $singles.Add(@($item)) }
+                return ,$singles.ToArray()
             }
-
-            $chunks = @()
-
-            if ($effectiveDistribution -eq 'Even') {
-                $BaseSize  = [Math]::Floor($Count / $MaxChunk)
-                $Remainder = $Count % $MaxChunk
-                Write-Verbose "Base size: $BaseSize"
-                Write-Verbose "Remainder: $Remainder"
-                $index = 0
-                for ($i = 1; $i -le $MaxChunk; $i++) {
-                    $size = $BaseSize
-                    if ($Remainder -gt 0) { $size++; $Remainder-- }
-                    $chunks += ,$Array[$index..($index + $size - 1)]
-                    $index += $size
-                }
-            } else {
-                # Greedy: fill each chunk to ceil(Count/MaxChunk); last chunk absorbs remainder
-                $BaseSize = [Math]::Ceiling($Count / $MaxChunk)
-                Write-Verbose "Base size: $BaseSize"
-                $index = 0
-                while ($index -lt $Count) {
-                    $end = [Math]::Min($index + $BaseSize - 1, $Count - 1)
-                    $chunks += ,$Array[$index..$end]
-                    $index += $BaseSize
-                }
-            }
-
-            Write-Verbose "Chunks created: $($chunks.Count)"
-            Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
-
-            if ($doPad) { $chunks = Add-PadToLastChunk $chunks $Pad }
-
-            return ,$chunks
         }
+
+        $chunkList = [System.Collections.Generic.List[object]]::new()
+
+        if ($effectiveDistribution -eq 'Greedy') {
+            # Chunk width: ChunkSize directly, or ceil(count / MaxChunk)
+            $stride = if ($bySize) {
+                $ChunkSize
+            } else {
+                $s = [int][Math]::Ceiling($count / $MaxChunk)
+                Write-Verbose "Base size: $s"
+                $s
+            }
+            for ($index = 0; $index -lt $count; $index += $stride) {
+                $last = [Math]::Min($index + $stride - 1, $count - 1)
+                $chunkList.Add($items[$index..$last])
+            }
+        } else {
+            # Even: number of chunks from ChunkSize, or MaxChunk directly;
+            # spread the remainder one element at a time across the first chunks
+            $numChunks = if ($bySize) {
+                $n = [int][Math]::Ceiling($count / $ChunkSize)
+                Write-Verbose "Number of chunks: $n"
+                $n
+            } else {
+                $MaxChunk
+            }
+            $baseSize  = [int][Math]::Floor($count / $numChunks)
+            $remainder = $count % $numChunks
+            Write-Verbose "Base size: $baseSize"
+            Write-Verbose "Remainder: $remainder"
+            $index = 0
+            for ($i = 1; $i -le $numChunks; $i++) {
+                $size = $baseSize
+                if ($remainder -gt 0) { $size++; $remainder-- }
+                $chunkList.Add($items[$index..($index + $size - 1)])
+                $index += $size
+            }
+        }
+
+        $chunks = $chunkList.ToArray()
+
+        Write-Verbose "Chunks created: $($chunks.Count)"
+        Write-Verbose "Chunk sizes: $(($chunks | ForEach-Object { $_.Count }) -join ', ')"
+
+        if ($doPad) { $chunks = Add-PadToLastChunk -Chunks $chunks -PadValue $Pad }
+
+        return ,$chunks
     }
 }

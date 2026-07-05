@@ -1,4 +1,4 @@
-function Add-PadToLastChunk {
+﻿function Add-PadToLastChunk {
     [CmdletBinding()]
     [OutputType([object[]])]
     param(

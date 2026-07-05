@@ -1,4 +1,4 @@
-function Split-Array {
+﻿function Split-Array {
 <#
 .SYNOPSIS
     Splits an array into sub-arrays (chunks) using a configurable distribution strategy.

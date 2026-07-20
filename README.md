@@ -1,5 +1,7 @@
 # SplitArray
 
+[![CI](https://github.com/kreisi-dev/Split-Array/actions/workflows/ci.yml/badge.svg)](https://github.com/kreisi-dev/Split-Array/actions/workflows/ci.yml)
+
 A PowerShell module whose `Split-Array` function splits an array into sub-arrays (chunks) with configurable distribution.
 
 A common use case is parallelization: to process data in parallel you first have to break it into portions (chunks). `Split-Array` does that once, so each script doesn't have to reimplement it.

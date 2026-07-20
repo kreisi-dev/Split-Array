@@ -12,7 +12,7 @@
 RootModule = 'SplitArray.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop', 'Core')
@@ -108,6 +108,12 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+1.0.2
+- Infrastructure only: releases are now driven by version tags (with tests and a
+  tag/version check before publishing), CI lints more strictly, and the README
+  carries the Gallery version badge.
+- No functional changes.
+
 1.0.1
 - Documentation only: installation instructions now point to the PowerShell Gallery.
 - No functional changes.

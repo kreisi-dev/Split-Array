@@ -15,7 +15,7 @@ RootModule = 'SplitArray.psm1'
 ModuleVersion = '1.0.0'
 
 # Supported PSEditions
-# CompatiblePSEditions = @()
+CompatiblePSEditions = @('Desktop', 'Core')
 
 # ID used to uniquely identify this module
 GUID = 'ce2cea65-0255-43c0-81a0-4b179a30b321'
@@ -107,7 +107,15 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = @'
+1.0.0
+- Initial release.
+- Split-Array: splits an array into chunks by -ChunkSize (elements per chunk) or -MaxChunk (number of chunks).
+- -Distribution parameter (Greedy/Even) controls how the remainder is spread across chunks.
+- -Pad parameter fills the last chunk up to full size with a given value.
+- Pipeline support.
+- Empty input yields one empty chunk (by design).
+'@
 
         # Prerelease string of this module
         # Prerelease = ''

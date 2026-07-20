@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Pester
         shell: pwsh
@@ -33,7 +33,7 @@ jobs:
     name: Pester (Windows PowerShell 5.1)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Pester
         shell: powershell
@@ -54,7 +54,7 @@ jobs:
     name: PSScriptAnalyzer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install PSScriptAnalyzer
         shell: pwsh
@@ -63,8 +63,9 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer -Path ./SplitArray -Recurse -Severity Warning
-          $results | Format-Table -AutoSize
-          if ($results | Where-Object Severity -eq 'Error') {
-            throw "PSScriptAnalyzer found $(@($results | Where-Object Severity -eq 'Error').Count) error(s)."
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error, Warning
+          if ($results) {
+              $results | Format-Table -AutoSize | Out-String | Write-Host
+              throw "PSScriptAnalyzer found $($results.Count) finding(s)."
           }
+          Write-Host 'PSScriptAnalyzer: clean.'

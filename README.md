@@ -1,6 +1,7 @@
 # SplitArray
 
 [![CI](https://github.com/kreisi-dev/Split-Array/actions/workflows/ci.yml/badge.svg)](https://github.com/kreisi-dev/Split-Array/actions/workflows/ci.yml)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/SplitArray.svg)](https://www.powershellgallery.com/packages/SplitArray)
 
 A PowerShell module whose `Split-Array` function splits an array into sub-arrays (chunks) with configurable distribution.
 

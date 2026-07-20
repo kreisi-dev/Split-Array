@@ -12,7 +12,7 @@
 RootModule = 'SplitArray.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0'
+ModuleVersion = '1.0.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop', 'Core')
@@ -108,6 +108,10 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+1.0.1
+- Documentation only: installation instructions now point to the PowerShell Gallery.
+- No functional changes.
+
 1.0.0
 - Initial release.
 - Split-Array: splits an array into chunks by -ChunkSize (elements per chunk) or -MaxChunk (number of chunks).

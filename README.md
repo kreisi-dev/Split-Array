@@ -22,17 +22,18 @@ A common use case is parallelization: to process data in parallel you first have
 
 ## Installation
 
-Import the module from a clone of this repository:
+Install from the [PowerShell Gallery](https://www.powershellgallery.com/packages/SplitArray):
+
+```powershell
+Install-Module SplitArray          # PowerShellGet
+# or
+Install-PSResource SplitArray      # PSResourceGet
+```
+
+Alternatively, import the module from a clone of this repository:
 
 ```powershell
 Import-Module ./SplitArray/SplitArray.psd1
-```
-
-To make it available in every session, copy the `SplitArray` folder into one of your
-`$env:PSModulePath` directories and import it by name:
-
-```powershell
-Import-Module SplitArray
 ```
 
 ## Usage

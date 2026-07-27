@@ -16,9 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install Pester
+      - name: Install dependencies (PSDepend)
         shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+        run: |
+          Install-Module PSDepend -Force -Scope CurrentUser
+          Invoke-PSDepend -Path ./requirements.psd1 -Force
 
       - name: Run Pester tests
         shell: pwsh
@@ -35,13 +37,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install Pester
+      - name: Install dependencies (PSDepend)
         shell: powershell
         run: |
           # Without TLS 1.2 the PowerShellGet calls cannot reach the PSGallery on PS 5.1.
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser | Out-Null
-          Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+          Install-Module PSDepend -Force -Scope CurrentUser
+          Invoke-PSDepend -Path ./requirements.psd1 -Force
 
       - name: Run Pester tests
         shell: powershell
@@ -58,9 +61,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install PSScriptAnalyzer
+      - name: Install dependencies (PSDepend)
         shell: pwsh
-        run: Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+        run: |
+          Install-Module PSDepend -Force -Scope CurrentUser
+          Invoke-PSDepend -Path ./requirements.psd1 -Force
 
       - name: Run PSScriptAnalyzer
         shell: pwsh

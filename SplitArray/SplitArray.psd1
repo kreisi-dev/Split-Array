@@ -3,7 +3,7 @@
     RootModule           = 'SplitArray.psm1'
 
     # Version of this module.
-    ModuleVersion        = '1.0.2'
+    ModuleVersion        = '1.0.3'
 
     # Supported PSEditions.
     CompatiblePSEditions = @('Desktop', 'Core')
@@ -42,6 +42,11 @@
             LicenseUri   = 'https://github.com/kreisi-dev/Split-Array/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/kreisi-dev/Split-Array'
             ReleaseNotes = @'
+1.0.3
+- Tooling only: dev dependencies are declared in requirements.psd1 (PSDepend)
+  and dev tasks (lint, test) are driven by Invoke-Build, locally and in CI.
+- No functional changes.
+
 1.0.2
 - Infrastructure only: releases are now driven by version tags (with tests and a
   tag/version check before publishing), CI lints more strictly, and the README

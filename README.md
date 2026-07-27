@@ -202,13 +202,13 @@ the loader picks it up automatically and exports everything in `Public/`.
 ## Tests
 
 Tests are written with [Pester](https://pester.dev) v5 and import the module under test.
-Development dependencies (Pester, PSScriptAnalyzer) are declared in
-[`requirements.psd1`](requirements.psd1) and can be installed with
-[PSDepend](https://github.com/RamblingCookieMonster/PSDepend):
+Development tasks are driven by [Invoke-Build](https://github.com/nightroman/Invoke-Build)
+([`SplitArray.build.ps1`](SplitArray.build.ps1)); the dependencies it installs are
+declared in [`requirements.psd1`](requirements.psd1) (PSDepend):
 
 ```powershell
-Invoke-PSDepend -Path ./requirements.psd1 -Force
-Invoke-Pester ./tests/Split-Array.Tests.ps1
+Install-Module InvokeBuild, PSDepend -Scope CurrentUser   # once
+Invoke-Build                                              # Deps + Lint + Test
 ```
 
 ## License

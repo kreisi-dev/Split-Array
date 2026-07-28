@@ -30,3 +30,7 @@ $RECYCLE.BIN/
 
 # Generated reports
 test-report.html
+
+# Test/coverage artifacts
+testResults*.xml
+coverage*.xml
